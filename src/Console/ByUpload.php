@@ -83,7 +83,7 @@ class ByUpload extends Command
                 $block_list_uploaded[] = $shardUploadResponse->getMd5();
                 $bar->advance(1);//增量进度
                 ## 内存占用
-                $this->showMemory();
+//                $this->showMemory();
             }
 
             $bar->finish();//结束进度
