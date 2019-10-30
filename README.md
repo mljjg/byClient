@@ -1,9 +1,18 @@
-# 百度网盘对接
-- [百度网盘API文档](https://pan.baidu.com/union)
+## 用途（purpose）
+- 百度网盘对接[百度网盘API文档](https://pan.baidu.com/union)
+
+## 要求 
+- Laravel 5.5+
+
+## 使用步骤
+
+- 通过composer 安装（Install with Composer）:
+```
+composer require jjg/byclient
+```
 
 
 ## 生成配置
-
 ```
 php artisan vendor:publish
 
