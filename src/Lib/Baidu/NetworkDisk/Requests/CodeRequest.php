@@ -9,7 +9,7 @@
 namespace Jjg\Lib\Baidu\NetworkDisk\Requests;
 
 
-class CodeRequest
+class CodeRequest extends Request
 {
     private $response_type = 'code';
     private $client_id = '';
@@ -19,11 +19,14 @@ class CodeRequest
     private $qrcode = '1';
     private $force_login = '1';
 
-    private $url_fmt = 'https://openapi.baidu.com/oauth/2.0/authorize?response_type=%s&client_id=%s&redirect_uri=%s&scope=%s&display=%s&qrcode=%s&force_login=%s';
+    public function __construct()
+    {
+        parent::__construct();
+        $this->method = 'GET';
+        $this->url_fmt = 'https://openapi.baidu.com/oauth/2.0/authorize?response_type=%s&client_id=%s&redirect_uri=%s&scope=%s&display=%s&qrcode=%s&force_login=%s';
+    }
 
-    private $method = 'GET';
-
-    public function getUrl()
+    public function getHttpUrl()
     {
         return sprintf($this->url_fmt, $this->response_type, $this->client_id, $this->redirect_uri, $this->scope, $this->display, $this->qrcode, $this->force_login);
     }
@@ -35,14 +38,6 @@ class CodeRequest
     public function setClientId(string $client_id)
     {
         $this->client_id = $client_id;
-    }
-
-    /**
-     * @return string
-     */
-    public function getMethod(): string
-    {
-        return $this->method;
     }
 
 }

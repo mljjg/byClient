@@ -9,21 +9,21 @@
 namespace Jjg\Lib\Baidu\NetworkDisk;
 
 
-use Illuminate\Support\Facades\Cache;
 use Jjg\Lib\Baidu\NetworkDisk\Exceptions\PathException;
 use Jjg\Lib\Baidu\NetworkDisk\Requests\AccessTokenRequest;
 use Jjg\Lib\Baidu\NetworkDisk\Requests\CodeRequest;
 use Jjg\Lib\Baidu\NetworkDisk\Requests\CreateFileRequest;
+use Jjg\Lib\Baidu\NetworkDisk\Requests\MakeDirRequest;
 use Jjg\Lib\Baidu\NetworkDisk\Requests\PreCreateRequest;
 use Jjg\Lib\Baidu\NetworkDisk\Requests\ShardUploadRequest;
-use Jjg\Lib\Baidu\NetworkDisk\Responses\CreateFileResponse;
+
 
 class NetworkDiskClient
 {
     private $app_id;
     private $api_key;
     private $secret_key;
-    private $cacheKey = 'baiduyun.access_token.info';
+
     /**
      * @var \GuzzleHttp\Client
      */
@@ -46,7 +46,7 @@ class NetworkDiskClient
         $codeRequest = new CodeRequest();
         $codeRequest->setClientId($this->api_key);
 
-        return $codeRequest->getUrl();
+        return $codeRequest->getHttpUrl();
 
     }
 
@@ -58,50 +58,19 @@ class NetworkDiskClient
      */
     public function getAccessToken($code)
     {
-        $result = new Result();
-        $netdiskRequest = new AccessTokenRequest($code, $this->api_key, $this->secret_key);
-        $url = $netdiskRequest->getUrl();
-        try {
-            $response = $this->httpClient->request($netdiskRequest->getMethod(), $url);
-            $body = $response->getBody();
-            $data = \GuzzleHttp\json_decode((string)$body);
-            if (!empty($data->access_token)) {
-                $result->setData(['access_token' => $data->access_token, 'expires_in' => $data->expires_in ?? 0, 'scope' => $data->scope ?? '', 'refresh_token' => $data->refresh_token ?? '']);
-
-
-                ## 缓存 token信息
-                Cache::put($this->cacheKey, $result, floor($result->getData()['expires_in'] / 60));
-            }
-
-        } catch (\Exception $exception) {
-            $result->failed($exception->getMessage());
-        }
-
-        return $result;
+        $accessTokenRequest = new AccessTokenRequest();
+        $accessTokenRequest->setCode($code);
+        $accessTokenRequest->setApiKey($this->api_key);
+        $accessTokenRequest->setSecretKey($this->secret_key);
+        return  $accessTokenRequest->load();
 
     }
 
-    /**
-     * @return null
-     * @throws \Exception
-     */
-    public function getToken()
-    {
-        $result = Cache::get($this->cacheKey);
-        $token = $result->getData()['access_token'] ?? null;
-
-        if ($token) {
-            return $token;
-        } else {
-            throw new \Exception('Please execute script [by:info] authorization');
-        }
-
-    }
 
     /**
      * @param $localPath
      * @param $remotePath
-     * @return Responses\PreCreateResponse|\Psr\Http\Message\ResponseInterface
+     * @return Result
      * @throws PathException
      */
     public function preCreate($localPath, $remotePath)
@@ -122,7 +91,7 @@ class NetworkDiskClient
      * "md5": "55142edf74727f4a80cfd86c4d80be4f",
      * "request_id": 8383464737849269312
      * }
-     * @return Responses\ShardUploadResponse
+     * @return Result
      * @throws Exceptions\ShardUploadException
      */
     public function shardUpload($localPath, $remotePath, $uploadId, $partSeq = 0)
@@ -140,7 +109,8 @@ class NetworkDiskClient
      * @param $uploadId
      * @param $blockList
      *
-     * @return CreateFileResponse|\Psr\Http\Message\ResponseInterface
+     * @return Result
+     * @throws PathException
      */
     public function createFile($localPath, $remotePath, $uploadId, $blockList)
     {
@@ -150,9 +120,29 @@ class NetworkDiskClient
 
     /**
      * 创建目录
+     * @param $relativePath
+     * @param null $remoteRootDir
+     * @return Result
+     * @throws PathException
      */
-    public function createDir()
+    public function makeDir($relativePath, $remoteRootDir = null): Result
     {
+        $remoteRootDir = $remoteRootDir == null ? config('netdisk.remote.root') : $remoteRootDir;
+        if ($lastRootChar = substr($remoteRootDir, -1)) {
+            if ($lastRootChar != '/')
+                $remoteRootDir .= '/';
+        }
+
+        if ($lastChar = substr($relativePath, -1)) {
+            if ($lastChar != '/')
+                $relativePath .= '/';
+        }
+
+        $remotePath = $relativePath == '/' ? $remoteRootDir : $remoteRootDir . $relativePath;
+
+        $makeDirRequest = new MakeDirRequest($remotePath);
+
+        return $makeDirRequest->load();
 
     }
 

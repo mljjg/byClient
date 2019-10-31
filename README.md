@@ -42,6 +42,11 @@ you enter code:3ced93d242f0fa59d506d65dcb3a692d
 php artisan by:upload {localPath} {relativePath?} {remoteRootDir?}
 ```
 
+- 创建目录
+```
+php artisan by:make-dir {relativePath} {remoteRootDir?}
+```
+
 - 内存使用情况
 ```
 used memory:16.064987182617 MB

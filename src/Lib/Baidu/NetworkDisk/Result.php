@@ -9,6 +9,8 @@
 namespace Jjg\Lib\Baidu\NetworkDisk;
 
 
+use Jjg\Lib\Baidu\NetworkDisk\Responses\Response;
+
 class Result
 {
 
@@ -29,10 +31,9 @@ class Result
     private $msg = '操作成功';
 
     /**
-     * 返回数据
-     * @var null
+     * @var mixed
      */
-    private $data = null;
+    private $model;
 
     /**
      * the Response content must be a string or object implementing __toString()
@@ -40,7 +41,7 @@ class Result
      */
     public function __toString()
     {
-        return json_encode($this->toArray());
+        return \GuzzleHttp\json_encode($this->toArray());
     }
 
     /**
@@ -52,7 +53,7 @@ class Result
             'code' => $this->code,
             'msg' => $this->msg,
             'success' => $this->success,
-            'data' => $this->data,
+            'model' => $this->model,
         ];
     }
 
@@ -132,26 +133,26 @@ class Result
      */
     public function succeed($data = null, $msg = null)
     {
-        $this->setData($data);
+        $this->setModel($data);
         $this->setSuccess(true);
         $this->msg = $msg ?: $this->getMsg();
         return $this;
     }
 
     /**
-     * @return null
+     * @return mixed
      */
-    public function getData()
+    public function getModel()
     {
-        return $this->data;
+        return $this->model;
     }
 
     /**
-     * @param null $data
+     * @param  $model
      */
-    public function setData($data)
+    public function setModel($model)
     {
-        $this->data = $data;
+        $this->model = $model;
     }
 
 }

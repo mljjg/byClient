@@ -4,6 +4,7 @@ namespace Jjg\Console\Commands;
 
 use Illuminate\Console\Command;
 use Jjg\Lib\Baidu\NetworkDisk\NetworkDiskClient;
+use Jjg\Lib\Baidu\NetworkDisk\Responses\PreCreateResponse;
 
 class ByUpload extends Command
 {
@@ -71,16 +72,22 @@ class ByUpload extends Command
             ## 判断要求上传的是本地的一个文件还是目录（文件夹），若上传的是目录，则要遍历目录及其子目录的文件
 
             # 1)预上传
-            $preCreateResponse = $this->networkDiskClient->preCreate($localPath, $remoteDir);
+            $preCreateResponseResult = $this->networkDiskClient->preCreate($localPath, $remoteDir);
+
+            $preCreateResponse = $preCreateResponseResult->getModel();
+            $remotePath = $preCreateResponse->path;
+            $uploadid = $preCreateResponse->uploadid;
 
             # 2）分片上传
-            $bar = $this->output->createProgressBar(count($preCreateResponse->getBlockList()));//开启进度
             $block_list_uploaded = [];//已上传的分片
-
-            $blocks = $preCreateResponse->getBlockList() ?: [0];
+            $blocks = $preCreateResponse->block_list ?: [0];
+            $bar = $this->output->createProgressBar(count($blocks));//开启进度
             foreach ($blocks as $partSeq) {
-                $shardUploadResponse = $this->networkDiskClient->shardUpload($localPath, $preCreateResponse->getRemotePath(), $preCreateResponse->getUploadId(), $partSeq);
-                $block_list_uploaded[] = $shardUploadResponse->getMd5();
+                $shardUploadResponseResult = $this->networkDiskClient->shardUpload($localPath, $remotePath, $uploadid, $partSeq);
+
+                $shardUploadResponse = $shardUploadResponseResult->getModel();
+
+                $block_list_uploaded[] = $shardUploadResponse->md5;
                 $bar->advance(1);//增量进度
                 ## 内存占用
 //                $this->showMemory();
@@ -89,9 +96,9 @@ class ByUpload extends Command
             $bar->finish();//结束进度
 
             # 3) 创建文件
-            $res = $this->networkDiskClient->createFile($localPath, $preCreateResponse->getRemotePath(), $preCreateResponse->getUploadId(), $block_list_uploaded);
+            $res = $this->networkDiskClient->createFile($localPath, $remotePath, $uploadid, $block_list_uploaded);
             $this->info('');
-            $this->info($res->getPath());
+            $this->info($res);
 
         } catch (\Exception $exception) {
             $this->error($exception->getMessage());

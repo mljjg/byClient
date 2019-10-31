@@ -15,6 +15,9 @@ return [
     'api_key' => env('BND_API_KEY', 'ukp6O2V0Pzvxfkaj9qTYWGmp'),
     'secret_key' => env('BND_SECRET_KEY', 'hG7ZbE8PS7PGMpAvCZGqaPbplRCfV4oP'),
     'remote' => [
+        /**
+         * 配置百度文件根目录：默认为/apps/tengyun/
+         */
         'root' => env('BND_REMOTE_ROOT', '/apps/tengyun/')
     ]
 

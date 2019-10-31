@@ -12,6 +12,7 @@ namespace Jjg\Providers;
 use Illuminate\Support\ServiceProvider;
 use Jjg\Console\Commands\By;
 use Jjg\Console\Commands\ByInfo;
+use Jjg\Console\Commands\ByMakeDir;
 use Jjg\Console\Commands\ByUpload;
 
 class ByClientServiceProvider extends ServiceProvider
@@ -22,7 +23,8 @@ class ByClientServiceProvider extends ServiceProvider
     protected $commands = [
         By::class,
         ByInfo::class,
-        ByUpload::class
+        ByUpload::class,
+        ByMakeDir::class
     ];
 
     /**

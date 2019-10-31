@@ -11,6 +11,7 @@ namespace Jjg\Lib\Baidu\NetworkDisk\Requests;
 
 use Jjg\Lib\Baidu\NetworkDisk\Exceptions\ShardUploadException;
 use Jjg\Lib\Baidu\NetworkDisk\Responses\ShardUploadResponse;
+use Jjg\Lib\Baidu\NetworkDisk\Result;
 
 class ShardUploadRequest extends Request
 {
@@ -24,8 +25,6 @@ class ShardUploadRequest extends Request
 
     private $part_seq = 0;
 
-    private $url_fmt = 'https://d.pcs.baidu.com/rest/2.0/pcs/superfile2?method=upload&access_token=%s&type=tmpfile&path=%s&uploadid=%s&partseq=%s';
-
     public function __construct($localPath, $remotePath, $uploadId, $partSeq)
     {
         parent::__construct();
@@ -34,9 +33,11 @@ class ShardUploadRequest extends Request
         $this->upload_id = $uploadId;
         $this->part_seq = $partSeq;
 
+        $this->url_fmt = 'https://d.pcs.baidu.com/rest/2.0/pcs/superfile2?method=upload&access_token=%s&type=tmpfile&path=%s&uploadid=%s&partseq=%s';
+
     }
 
-    public function getUrl()
+    public function getHttpUrl()
     {
         return sprintf($this->url_fmt, $this->access_token, $this->uploaded_path, $this->upload_id, $this->part_seq);
     }
@@ -59,15 +60,14 @@ class ShardUploadRequest extends Request
 
 
     /**
-     * @return ShardUploadResponse
+     * @return Result
      * @throws ShardUploadException
      */
-    public function load(): ShardUploadResponse
+    public function load(): Result
     {
         $file = $this->extractTmpFile($this->local_path, $this->part_seq);
-        $url = $this->getUrl();
+        $url = $this->getHttpUrl();
         $response = $this->httpClient->post($url, [
-//            'form_params' => ['file' => $file],
             'multipart' => [['name' => 'file', 'contents' => $file]],
         ]);
 
@@ -81,7 +81,31 @@ class ShardUploadRequest extends Request
         # 删除临时文件
         $this->deleteTmpFile($this->local_path, $this->part_seq);
 
-        return new ShardUploadResponse($data->md5, $data->request_id ?? '');
+        $this->result->succeed($data);
+
+        return $this->result;
+    }
+
+    /**
+     * 删除临时文件
+     * @param $path
+     * @param $partSeq
+     * @return bool
+     */
+    private function deleteTmpFile($path, $partSeq)
+    {
+        return unlink(storage_path('tmp/' . pathinfo($path, PATHINFO_BASENAME) . '_' . $partSeq));
+    }
+
+    /**
+     * 读取临时文件：文件流
+     * @param $path
+     * @param $partSeq
+     * @return bool|resource
+     */
+    private function extractTmpFile($path, $partSeq)
+    {
+        return fopen(storage_path('tmp/' . pathinfo($path, PATHINFO_BASENAME) . '_' . $partSeq), 'rb');
     }
 
 }
